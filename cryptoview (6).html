@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CryptoView</title>
+<style>
+:root{--bg:#0c111b;--panel:#141b29;--line:#26314a;--text:#e8edf7;--muted:#8e9ab3;--accent:#4f8cff;--up:#2ec27e;--down:#f0616d;--warn:#f5b942}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+[hidden]{display:none!important}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+.logo{font-weight:700;font-size:18px}
+button,input,select{font:inherit;color:inherit;border-radius:8px;border:1px solid var(--line);background:#0f1522;padding:9px 14px}
+button{cursor:pointer}
+button:hover{border-color:var(--accent)}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+main{flex:1;display:flex;min-width:0}
+#auth{margin:auto;width:min(380px,92vw);padding:24px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tabs button{flex:1}
+.on{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff}
+#form input{width:100%;margin-bottom:10px}
+#form button{width:100%}
+.error{color:var(--down);min-height:22px;margin-top:8px}
+#app{flex:1;display:flex;min-width:0}
+nav{width:200px;flex:none;border-right:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:6px}
+nav button{text-align:left;background:transparent;border-color:transparent}
+#page{flex:1;padding:22px;min-width:0;max-width:1000px}
+h1{margin:0 0 10px;font-size:24px}
+h2{font-size:17px;margin:0 0 8px}
+.muted{color:var(--muted);font-size:13px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.price{font-size:32px;font-weight:700;font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.down{color:var(--down)}.wait{color:var(--warn)}
+canvas{width:100%;height:340px;display:block;cursor:crosshair}
+.periods{display:flex;gap:6px;margin:10px 0}
+.periods button{padding:5px 11px;font-size:13px}
+.hint{border-left:4px solid var(--line);padding:10px 14px;margin-bottom:10px;background:#0f1522;border-radius:6px}
+.hint.buy{border-color:var(--up)}.hint.sell{border-color:var(--down)}.hint.wait{border-color:var(--warn)}
+footer{border-top:1px solid var(--line);padding:16px 20px;color:var(--muted);font-size:13px;text-align:center}
+footer a{color:var(--muted)}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;width:min(340px,90vw);z-index:5}
+#toasts .hint{border:1px solid var(--line);border-left-width:4px;box-shadow:0 8px 24px #0008;margin:0;cursor:pointer}
+#toasts .hint.buy{border-left-color:var(--up)}#toasts .hint.sell{border-left-color:var(--down)}#toasts .hint.wait{border-left-color:var(--warn)}
+#modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+#modal .card{max-width:420px}
+@media(max-width:700px){#app{flex-direction:column}nav{width:auto;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}nav button{white-space:nowrap}#page{padding:14px}}
+
+/* ===== современное оформление ===== */
+body{background:radial-gradient(900px 500px at 85% -10%,#4f8cff2e,transparent 60%),radial-gradient(700px 500px at -10% 100%,#2ec27e1c,transparent 60%),var(--bg);background-attachment:fixed}
+header{position:sticky;top:0;z-index:4;background:#141b29cc;backdrop-filter:blur(14px);padding:12px 24px}
+.logo{display:flex;align-items:center;gap:10px;letter-spacing:-.02em}
+.logo span{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--up));color:#fff;box-shadow:0 6px 18px #4f8cff55}
+button,input,select{border-radius:12px;transition:.18s}
+button:hover{transform:translateY(-1px)}
+input{padding:13px 14px}
+input:focus,select:focus,button:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px #4f8cff40}
+.primary,.on{background:linear-gradient(135deg,var(--accent),#3567e0)!important;box-shadow:0 8px 22px #4f8cff45}
+.primary{padding:12px 18px}
+.card{background:linear-gradient(160deg,#18213299,#141b29ee);border-radius:20px;padding:22px;box-shadow:0 18px 40px #0005,inset 0 1px 0 #ffffff0a}
+.tabs{background:#0f1522;padding:5px;border-radius:15px}
+.tabs button{border-color:transparent;background:transparent}
+#auth{width:min(1040px,92vw);display:grid;grid-template-columns:1.2fr 1fr;gap:56px;align-items:center;padding:36px 0}
+#auth .card{margin:0}
+.hero h1{font-size:clamp(30px,4.2vw,48px);line-height:1.12;letter-spacing:-.03em;margin:18px 0}
+.hero em,h1.grad{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--up));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{font-size:17px;color:var(--muted)}
+.hero ul{list-style:none;padding:0;display:grid;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#141b29aa;border-radius:99px;padding:6px 14px;font-size:13px}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--up);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35;box-shadow:0 0 0 5px #2ec27e33}}
+nav{width:230px;padding:18px 14px;background:#141b2966}
+nav button{display:flex;align-items:center;gap:11px;padding:10px 12px;font-weight:600}
+.badge{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:10px;font-weight:800;font-size:14px;background:#4f8cff22;color:var(--accent)}
+.badge.USDT{background:#2ec27e22;color:var(--up)}.badge.BTC{background:#f5b94222;color:var(--warn)}.badge.ETH{background:#8e9ab32b;color:#c3cce0}
+#page{max-width:1080px;margin:0 auto;padding:28px}
+#page>*{animation:rise .35s ease both}
+#page.still>*{animation:none}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+h1{letter-spacing:-.025em;font-size:28px}
+.banner{border:1px solid var(--line);border-radius:24px;padding:34px;margin-bottom:18px;background:linear-gradient(125deg,#4f8cff30,#141b29 55%,#2ec27e24)}
+.banner h1{font-size:clamp(26px,3.6vw,38px);margin:14px 0 8px}
+.banner p{max-width:640px;margin:0;color:#c3cce0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
+.grid .card{margin:0}
+.coin{text-align:left;display:flex;flex-direction:column;gap:8px;cursor:pointer}
+.coin:hover{transform:translateY(-4px)}
+.coin b{font-size:21px}
+.price{font-size:clamp(30px,5vw,42px);letter-spacing:-.03em}
+.periods{background:#0f1522;padding:5px;border-radius:15px;width:fit-content;max-width:100%;flex-wrap:wrap}
+.periods button{border-color:transparent;background:transparent}
+.hint{border-radius:14px;background:#0f1522cc}
+#toasts{top:76px;bottom:auto;width:min(310px,90vw)}
+#toasts .hint{font-size:13px;animation:rise .3s ease both;background:#141b29f5}
+.notice{background:#f5b9421f;color:var(--warn);padding:10px 20px;text-align:center;font-size:14px}
+footer{background:#141b2980}
+@media(max-width:800px){#auth{grid-template-columns:1fr;gap:20px}.hero ul,.hero p{display:none}.hero h1{margin:12px 0 0}}
+@media(max-width:700px){nav{width:auto;padding:10px}#page{padding:14px;margin:0;width:100%}.banner{padding:22px}header{padding:10px 14px}}
+nav button.on .badge{background:#ffffff2e;color:#fff}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.bar{height:10px;border-radius:99px;background:#0f1522;overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--down),var(--warn),var(--up));}
+#rating .grid{margin:12px 0}
+
+/* ===== свежее оформление и анимации ===== */
+.aurora{position:fixed;inset:0;overflow:hidden;z-index:-1;pointer-events:none}
+.aurora i{position:absolute;width:46vmax;height:46vmax;border-radius:50%;filter:blur(90px);opacity:.2;animation:drift 18s ease-in-out infinite alternate}
+.aurora i:nth-child(1){background:var(--accent);top:-18vmax;left:-8vmax}
+.aurora i:nth-child(2){background:var(--up);bottom:-22vmax;right:-8vmax;animation-delay:-6s}
+.aurora i:nth-child(3){background:#7a5cff;top:30%;left:45%;opacity:.12;animation-delay:-11s}
+@keyframes drift{to{transform:translate(12vmax,8vmax) scale(1.25)}}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(circle at 50% 20%,#000,transparent 75%);mask-image:radial-gradient(circle at 50% 20%,#000,transparent 75%)}
+body{isolation:isolate}
+#ticker{overflow:hidden;border-bottom:1px solid var(--line);background:#141b2966;white-space:nowrap}
+#track{display:inline-flex;animation:marquee 45s linear infinite}
+#track span{padding:8px 26px;font-size:13px;font-weight:600;white-space:pre}
+#track em{font-style:normal}
+@keyframes marquee{to{transform:translateX(-50%)}}
+.card{background:linear-gradient(160deg,#1a243899,#141b29c7);backdrop-filter:blur(16px);border-color:#ffffff14;transition:transform .25s,border-color .25s,box-shadow .25s}
+.card:hover{border-color:#4f8cff66}
+#page>*:nth-child(2){animation-delay:.06s}#page>*:nth-child(3){animation-delay:.12s}#page>*:nth-child(4){animation-delay:.18s}#page>*:nth-child(5){animation-delay:.24s}#page>*:nth-child(n+6){animation-delay:.3s}
+.banner{position:relative;overflow:hidden;padding:48px 38px;background:linear-gradient(120deg,#4f8cff40,#141b29,#2ec27e33,#141b29);background-size:300% 300%;animation:rise .4s ease both,flow 12s ease infinite!important}
+@keyframes flow{50%{background-position:100% 50%}}
+.banner::after{content:"";position:absolute;right:-60px;top:-60px;width:280px;height:280px;border-radius:50%;border:1px solid #4f8cff55;box-shadow:0 0 0 40px #4f8cff12,0 0 0 90px #4f8cff0a;animation:breathe 5s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.12)}}
+.banner>*{position:relative;z-index:1}
+.hero em{background-size:200% 100%;background-image:linear-gradient(90deg,var(--accent),var(--up),var(--accent));animation:shine 5s linear infinite}
+@keyframes shine{to{background-position:200% 0}}
+.coin{position:relative;overflow:hidden;animation:rise .45s ease both}
+.coin:nth-child(2){animation-delay:.08s}.coin:nth-child(3){animation-delay:.16s}.coin:nth-child(4){animation-delay:.24s}
+.coin::before{content:"";position:absolute;inset:0;opacity:0;transition:.25s;background:radial-gradient(220px circle at var(--x,50%) var(--y,50%),#4f8cff33,transparent 70%)}
+.coin:hover::before{opacity:1}
+.coin:hover{transform:translateY(-6px);box-shadow:0 22px 44px #4f8cff30}
+.coin>*{position:relative}
+.spark{width:100%;height:44px;fill:none;stroke:currentColor;stroke-width:1.8}
+.spark polyline{vector-effect:non-scaling-stroke}
+.spark{animation:reveal 1.2s ease both}
+@keyframes reveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.primary{position:relative;overflow:hidden}
+.primary::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-90px;transform:skewX(-20deg);background:linear-gradient(90deg,transparent,#ffffff55,transparent);animation:sweep 3.5s infinite}
+@keyframes sweep{60%,100%{left:120%}}
+.ring{display:grid;place-items:center;width:108px;height:108px;border-radius:50%;background:conic-gradient(currentColor calc(var(--v)*1%),#0f1522 0);animation:spin-in .8s ease both}
+.ring span{display:grid;place-items:center;width:86px;height:86px;border-radius:50%;background:#141b29;font-size:30px;font-weight:800}
+@keyframes spin-in{from{transform:rotate(-120deg) scale(.7);opacity:0}}
+.verdict{font-size:20px}
+.chartbox{position:relative}
+.chartbox.draw canvas{animation:reveal 1s ease both}
+#dot{position:absolute;width:10px;height:10px;margin:-5px;border-radius:50%;pointer-events:none}
+#dot::after{content:"";position:absolute;inset:0;border-radius:50%;background:inherit;animation:ping 1.5s ease-out infinite}
+@keyframes ping{to{transform:scale(3.5);opacity:0}}
+.flash-up{animation:fu .9s}.flash-down{animation:fd .9s}
+@keyframes fu{20%{color:var(--up);text-shadow:0 0 22px var(--up)}}
+@keyframes fd{20%{color:var(--down);text-shadow:0 0 22px var(--down)}}
+#modal{backdrop-filter:blur(6px)}#modal .card{animation:rise .35s ease both}
+@media(max-width:700px){#toasts .hint>div:not(.muted){display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.hint.risk{border-color:var(--warn)}.hint.rise{border-color:var(--up)}.hint.fall{border-color:var(--down)}
+#toasts .hint.risk{border-left-color:var(--warn)}#toasts .hint.rise{border-left-color:var(--up)}#toasts .hint.fall{border-left-color:var(--down)}
+#rating .hint.risk{border-left:4px solid var(--warn)}
+@media(min-width:701px){nav{position:sticky;top:62px;align-self:flex-start;max-height:calc(100vh - 62px);overflow-y:auto}nav button{flex:none;padding:7px 12px}}
+.badge{position:relative;border-radius:50%;color:#fff!important}
+.badge img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;opacity:0}
+.badge.img{background:transparent!important;color:transparent!important}
+.badge.img img{opacity:1}
+#title{display:flex;align-items:center;gap:12px}
+#title .badge{width:42px;height:42px;font-size:19px}
+#reset{background:transparent;border:0;color:var(--muted);text-decoration:underline;font-size:13px}
+/* ===== кнопка «Купить» и заявка ===== */
+nav button.buy{background:linear-gradient(135deg,#2ec27e33,#4f8cff22);border-color:#2ec27e66}
+.order label{display:block;font-weight:600;margin:14px 0 6px}
+.order label:first-child{margin-top:0}
+.order select,.order input{width:100%}
+.order .primary{width:100%;margin-top:16px}
+.order .error{margin-top:10px}
+.okmsg{text-align:center;padding:10px 0}
+.okmsg b{display:block;font-size:20px;margin-bottom:8px}
+#allBox{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+/* ===== профиль ===== */
+#who{display:flex;align-items:center;gap:10px}
+.who-btn{padding:7px 14px;border-radius:99px;font-weight:600;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#profile{position:fixed;inset:0;background:#000a;backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+#profile .card{width:100%;max-width:380px;margin:0;animation:rise .35s ease both}
+.prow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.pval{font-weight:600;word-break:break-all}
+.eye{padding:6px 10px;flex:none;background:transparent}
+#profile .primary{width:100%;margin-top:18px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span>↗</span>CryptoView</div>
+  <div id="who" hidden><button id="whoName" class="who-btn" type="button" aria-label="Профиль"></button> <button id="logout">Выйти</button></div>
+</header>
+
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+<div id="ticker" hidden><div id="track"></div></div>
+<div id="nostore" class="notice" hidden>⚠️ Это окно не даёт сохранять данные: после закрытия аккаунт пропадёт. Скачайте файл и откройте его в браузере.</div>
+<main>
+  <section id="auth" hidden>
+    <div class="hero">
+      <span class="pill"><i></i> GRAM · USDT · BTC · ETH и ещё 10 монет</span>
+      <h1>Понимайте рынок<br><em>раньше, чем решаете</em></h1>
+      <p>Живые графики 14 криптовалют и подсказки ИИ-советника: когда присмотреться к покупке, когда к продаже, а когда подождать.</p>
+      <ul><li>📊 Графики в долларах, рублях и евро</li><li>🔔 Подсказки при смене сигнала</li><li>🕘 История всех советов</li></ul>
+    </div>
+    <div class="card">
+      <div class="tabs"><button type="button" id="tabReg" class="on">Регистрация</button><button type="button" id="tabLogin">Вход</button></div>
+      <div id="form">
+        <input id="email" type="email" placeholder="Почта" autocomplete="email">
+        <input id="login" placeholder="Логин" autocomplete="username">
+        <input id="password" type="password" placeholder="Пароль (не меньше 6 символов)">
+        <button type="button" class="primary" id="submit">Зарегистрироваться</button>
+        <div class="error" id="error"></div>
+        <button type="button" id="reset">Забыли пароль? Сбросить все данные</button>
+      </div>
+      <div class="muted">Тестовая версия: аккаунт хранится только в этом браузере. Не используйте пароль от почты, банка или биржи.</div>
+    </div>
+  </section>
+
+  <div id="app" hidden>
+    <nav id="nav"></nav>
+    <div id="page"></div>
+  </div>
+</main>
+
+<footer>
+  <b>Важно:</b> прогнозы не всегда могут быть точными, потому что криптовалюта непредсказуема. Сайт показывает только примерные прогнозы,
+  не является финансовой консультацией и не несёт ответственности за последствия ваших решений и возможные потери.<br>
+  Цены: Binance, Bybit, OKX, Gate, CryptoCompare, Coinbase, Kraken. Курсы валют: <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Rates By Exchange Rate API</a>.
+</footer>
+
+<div id="toasts"></div>
+<div id="modal" hidden><div class="card">
+  <h2>🤖 Бот: сохраните пароль!</h2>
+  <p>Запишите логин и пароль в надёжном месте. В этой версии <b>восстановить пароль нельзя</b>. Никому его не сообщайте.</p>
+  <button class="primary" id="modalOk">Я сохранил пароль</button>
+</div></div>
+
+<div id="profile" hidden><div class="card" id="profileBody"></div></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+
+// Адрес вашего Cloudflare Worker (см. инструкцию). Если пусто — заявки только сохраняются в браузере.
+const ORDER_URL = "https://cryptoview.liptik-so2.workers.dev";
+
+const COINS = {
+  GRAM: {name:"Gram", about:"Gram — монета блокчейна TON (The Open Network), связанного с экосистемой Telegram. До июня 2026 года называлась Toncoin (TON). Может сильно и быстро меняться в цене, особенно на новостях о Telegram."},
+  USDT: {name:"Tether", about:"USDT — стейблкоин: его цена должна держаться около 1 доллара. На нём обычно не зарабатывают на росте, а пережидают колебания рынка. В рублях и евро цена меняется вместе с курсом доллара."},
+  BTC:  {name:"Bitcoin", about:"Bitcoin — первая и самая известная криптовалюта, запущена в 2009 году. Количество ограничено 21 миллионом монет. Часто задаёт направление всему рынку."},
+  ETH:  {name:"Ethereum", about:"Ether (ETH) — монета сети Ethereum, на которой работают смарт-контракты и множество приложений. Вторая по известности криптовалюта после биткоина."},
+  SOL: {name:"Solana", about:"SOL — быстрая сеть для приложений и токенов. Цена может сильно и быстро меняться."},
+  BNB: {name:"BNB", about:"BNB — монета экосистемы биржи Binance. Цена может сильно и быстро меняться."},
+  XRP: {name:"XRP", about:"XRP — монета, ориентированная на переводы и платежи. Цена может сильно и быстро меняться."},
+  DOGE: {name:"Dogecoin", about:"DOGE — мем-монета, сильно зависит от настроений в соцсетях. Цена может сильно и быстро меняться."},
+  TRX: {name:"TRON", about:"TRX — монета сети TRON, где часто переводят USDT. Цена может сильно и быстро меняться."},
+  ADA: {name:"Cardano", about:"ADA — монета блокчейна Cardano. Цена может сильно и быстро меняться."},
+  LTC: {name:"Litecoin", about:"LTC — одна из старейших криптовалют, создана для платежей. Цена может сильно и быстро меняться."},
+  LINK: {name:"Chainlink", about:"LINK — токен сети, передающей в блокчейны внешние данные. Цена может сильно и быстро меняться."},
+  AVAX: {name:"Avalanche", about:"AVAX — монета платформы для приложений Avalanche. Цена может сильно и быстро меняться."},
+  DOT: {name:"Polkadot", about:"DOT — монета проекта, связывающего разные блокчейны. Цена может сильно и быстро меняться."}
+};
+// цвет монеты: виден, если картинка значка не загрузилась
+const COLORS = {GRAM:"#0098ea", USDT:"#26a17b", BTC:"#f7931a", ETH:"#627eea", SOL:"#9945ff", BNB:"#f3ba2f", XRP:"#6b7688", DOGE:"#c2a633",
+  TRX:"#ef0027", ADA:"#3468d1", LTC:"#8c9bb0", LINK:"#2a5ada", AVAX:"#e84142", DOT:"#e6007a"};
+function badge(id, letter){
+  const box = el("span", "badge " + id, letter);
+  if (!COLORS[id]) return box;
+  box.style.background = COLORS[id];
+  if (id === "GRAM") return box; // в наборах значков нет проверенной картинки Gram
+  const name = id.toLowerCase();
+  const urls = [`https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${name}.svg`, `https://assets.coincap.io/assets/icons/${name}@2x.png`];
+  const img = new Image();
+  img.alt = "";
+  img.onload = () => box.classList.add("img");
+  img.onerror = () => urls.length ? img.src = urls.shift() : img.remove();
+  img.src = urls.shift();
+  box.append(img);
+  return box;
+}
+const PERIODS = {"1m":["1 минута",60], "15m":["15 минут",900], "1h":["1 час",3600], "1d":["1 день",86400], "all":["Всё время",604800]};
+const SYM = {USD:"$", RUB:"₽", EUR:"€"};
+
+const memory = {};
+let persistent = true;
+try { localStorage.setItem("co_test", "1"); localStorage.removeItem("co_test"); } catch { persistent = false; }
+const store = {
+  get(k, d){ try { const raw = k in memory ? memory[k] : localStorage.getItem(k); return JSON.parse(raw) ?? d; } catch { return d; } },
+  set(k, v){ const raw = JSON.stringify(v); try { localStorage.setItem(k, raw); delete memory[k]; } catch { memory[k] = raw; persistent = false; } }
+};
+let user = null, data = null, view = "menu", period = "1m", rates = {USD:1}, candles = [], hover = null, chartError = "";
+const latest = {};
+
+/* ---------- Аккаунты ---------- */
+let mode = "reg";
+function setMode(m){
+  mode = m;
+  $("tabReg").classList.toggle("on", m === "reg");
+  $("tabLogin").classList.toggle("on", m === "login");
+  $("email").hidden = m !== "reg";
+  $("login").placeholder = m === "reg" ? "Логин" : "Логин или почта";
+  $("submit").textContent = m === "reg" ? "Зарегистрироваться" : "Войти";
+  $("error").textContent = "";
+}
+$("tabReg").onclick = () => setMode("reg");
+$("tabLogin").onclick = () => setMode("login");
+
+async function hash(password, salt){
+  if (!window.crypto?.subtle) { // запасной вариант для окон предпросмотра
+    let h = 2166136261;
+    for (const ch of salt + password) h = Math.imul(h ^ ch.codePointAt(0), 16777619);
+    return "s" + (h >>> 0).toString(16);
+  }
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt:new TextEncoder().encode(salt), iterations:150000}, key, 256);
+  return Array.from(new Uint8Array(bits), b => b.toString(16).padStart(2,"0")).join("");
+}
+
+async function submitForm(){
+  const email = $("email").value.trim().toLowerCase(), login = $("login").value.trim(), password = $("password").value;
+  const fail = t => $("error").textContent = t;
+  const users = store.get("co_users", []);
+  const same = (a, b) => a.toLowerCase() === b.toLowerCase();
+  if (mode === "reg") {
+    if (!/^\S+@\S+\.\S+$/.test(email)) return fail("Введите правильную почту.");
+    if (login.length < 3 || login.includes("@")) return fail("Логин: минимум 3 символа, без @.");
+    if (password.length < 6) return fail("Пароль: минимум 6 символов.");
+    if (users.some(u => u.email === email || same(u.login, login))) return fail("Такая почта или логин уже заняты.");
+    const salt = Array.from(crypto.getRandomValues(new Uint8Array(16))).join("-");
+    const u = {id: Date.now().toString(36), email, login, salt, hash: await hash(password, salt), pw: password};
+    store.set("co_users", users.concat(u));
+    enter(u);
+    $("modal").hidden = false;
+  } else {
+    const u = users.find(u => same(u.login, login) || same(u.email, login));
+    if (!u || await hash(password, u.salt) !== u.hash) return fail("Неверный логин или пароль.");
+    if (!u.pw) { u.pw = password; store.set("co_users", users); }
+    enter(u);
+  }
+}
+$("submit").onclick = submitForm;
+$("form").onkeydown = e => { if (e.key === "Enter" && e.target.tagName === "INPUT") submitForm(); };
+let resetArmed = false;
+$("reset").onclick = () => {
+  if (!resetArmed) {
+    resetArmed = true;
+    $("reset").textContent = "Точно? Удалятся все аккаунты и история. Нажмите ещё раз";
+    setTimeout(() => { resetArmed = false; $("reset").textContent = "Забыли пароль? Сбросить все данные"; }, 6000);
+    return;
+  }
+  try { Object.keys(localStorage).filter(k => k.startsWith("co_")).forEach(k => localStorage.removeItem(k)); } catch {}
+  Object.keys(memory).forEach(k => delete memory[k]);
+  location.reload();
+};
+$("modalOk").onclick = () => $("modal").hidden = true;
+$("logout").onclick = () => { store.set("co_session", null); location.reload(); };
+
+function enter(u){
+  user = u;
+  data = store.get("co_data_" + u.id, {history:[], hints:{}, last:{}, currency:"USD"});
+  data.base ??= {}; data.dip ??= {}; data.orders ??= []; data.orders.forEach((o, i, all) => o.n ??= all.length - i);
+  store.set("co_session", u.id);
+  ["email","login","password"].forEach(id => $(id).value = "");
+  $("nostore").hidden = persistent;
+  $("auth").hidden = true; $("app").hidden = false; $("who").hidden = false;
+  $("whoName").textContent = "👤 " + u.login;
+  open("menu");
+  evaluateAll();
+}
+const save = () => store.set("co_data_" + user.id, data);
+
+/* ---------- Данные рынка ---------- */
+async function getJSON(url){
+  const r = await fetch(url, {cache:"no-store", signal:AbortSignal.timeout(9000)});
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+// Возвращает свечи [{t, c}] в долларах, от старых к новым.
+// Если один источник не отвечает, пробуем следующий. USDT в парах принимается за 1 доллар.
+function sources(coin, p){
+  const sec = PERIODS[p][1];
+  const coinbase = [`https://api.exchange.coinbase.com/products/${coin}-USD/candles?granularity=${sec}`,
+    j => j.slice(0,120).reverse().map(r => ({t:r[0]*1000, c:+r[4]}))];
+  const compare = [`https://min-api.cryptocompare.com/data/v2/${{"1m":"histominute?","15m":"histominute?aggregate=15&","1h":"histohour?","1d":"histoday?"}[p]}fsym=${coin}&tsym=USD&limit=119`,
+    j => j.Data.Data.filter(r => r.close > 0).map(r => ({t:r.time*1000, c:+r.close}))];
+  if (coin === "USDT") return [coinbase, compare,
+    [`https://api.kraken.com/0/public/OHLC?pair=USDTUSD&interval=${sec/60}`, j => j.result.USDTZUSD.slice(-120).map(r => ({t:r[0]*1000, c:+r[4]}))]];
+  const list = [
+    [`https://data-api.binance.vision/api/v3/klines?symbol=${coin}USDT&interval=${p}&limit=120`, j => j.map(r => ({t:r[0], c:+r[4]}))],
+    [`https://api.bybit.com/v5/market/kline?category=spot&symbol=${coin}USDT&interval=${{"1m":1,"15m":15,"1h":60,"1d":"D"}[p]}&limit=120`, j => j.result.list.reverse().map(r => ({t:+r[0], c:+r[4]}))],
+    [`https://www.okx.com/api/v5/market/candles?instId=${coin}-USDT&bar=${{"1m":"1m","15m":"15m","1h":"1H","1d":"1Dutc"}[p]}&limit=120`, j => j.data.reverse().map(r => ({t:+r[0], c:+r[4]}))]
+  ];
+  list.push([`https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=${coin}_USDT&interval=${p}&limit=120`, j => j.map(r => ({t:r[0]*1000, c:+r[2]}))], compare);
+  if (coin !== "GRAM") list.push(coinbase);
+  return list;
+}
+const preferred = {}; // номер источника, который ответил в прошлый раз
+async function fromSource([url, parse], p){
+  const rows = parse(await getJSON(url));
+  if (rows.length >= 2 && Date.now() - rows.at(-1).t < PERIODS[p][1]*2000 + 3600000) return rows;
+  throw new Error("старые или пустые данные");
+}
+// Всё время: недельные свечи; берём источник с самой длинной историей
+const historyCache = {};
+async function longest(list){
+  const done = await Promise.allSettled(list.map(src => fromSource(src, "all")));
+  const good = done.filter(r => r.status === "fulfilled").map(r => r.value);
+  if (!good.length) throw new Error("нет данных");
+  return good.sort((a, b) => a[0].t - b[0].t)[0];
+}
+async function getHistory(coin){
+  const hit = historyCache[coin];
+  if (hit && Date.now() - hit.time < 60000) return hit.rows;
+  const parseBinance = j => j.map(r => ({t:r[0], c:+r[4]}));
+  const compare = [`https://min-api.cryptocompare.com/data/v2/histoday?fsym=${coin}&tsym=USD&allData=true`,
+    j => j.Data.Data.filter(r => r.close > 0).map(r => ({t:r.time*1000, c:+r.close}))];
+  const list = coin === "USDT"
+    ? [compare, [`https://api.kraken.com/0/public/OHLC?pair=USDTUSD&interval=10080`, j => j.result.USDTZUSD.map(r => ({t:r[0]*1000, c:+r[4]}))]]
+    : [compare,
+      [`https://data-api.binance.vision/api/v3/klines?symbol=${coin}USDT&interval=1w&limit=1000`, parseBinance],
+      [`https://api.bybit.com/v5/market/kline?category=spot&symbol=${coin}USDT&interval=W&limit=1000`, j => j.result.list.reverse().map(r => ({t:+r[0], c:+r[4]}))],
+      [`https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=${coin}_USDT&interval=7d&limit=1000`, j => j.map(r => ({t:r[0]*1000, c:+r[2]}))],
+      [`https://www.okx.com/api/v5/market/candles?instId=${coin}-USDT&bar=1Wutc&limit=300`, j => j.data.reverse().map(r => ({t:+r[0], c:+r[4]}))]];
+  let rows = await longest(list);
+  if (coin === "GRAM") { // добавляем историю под старым названием TON
+    try {
+      const old = parseBinance(await getJSON("https://data-api.binance.vision/api/v3/klines?symbol=TONUSDT&interval=1w&limit=1000"));
+      rows = old.filter(r => r.t < rows[0].t).concat(rows);
+    } catch { /* без старой истории */ }
+  }
+  historyCache[coin] = {time:Date.now(), rows};
+  return rows;
+}
+async function getCandles(coin, p){
+  if (p === "all") return getHistory(coin);
+  const list = sources(coin, p), key = coin;
+  if (preferred[key] !== undefined) {
+    try { return await fromSource(list[preferred[key]], p); } catch { delete preferred[key]; }
+  }
+  // опрашиваем все источники сразу и берём первый ответивший
+  return Promise.any(list.map(async (src, i) => { const rows = await fromSource(src, p); preferred[key] = i; return rows; }));
+}
+async function diagnose(out){
+  out.textContent = "";
+  out.append(el("div", "", `Открыто как: ${location.protocol} · сохранение данных: ${persistent ? "да" : "нет"} · интернет по мнению браузера: ${navigator.onLine ? "есть" : "нет"}`));
+  await Promise.all(sources(COINS[view] ? view : "BTC", "15m").map(async src => {
+    const line = el("div", "", new URL(src[0]).host + ": проверяю…"); out.append(line);
+    let result;
+    try { await fromSource(src, "15m"); result = "✅ работает"; }
+    catch (e) { result = "❌ " + (e.name === "TimeoutError" ? "не ответил за 9 секунд" : e.name === "TypeError" ? "запрос заблокирован или нет связи" : "ошибка " + e.message); }
+    line.textContent = new URL(src[0]).host + ": " + result;
+  }));
+  out.append(el("div", "muted", "Сделайте скриншот этого списка и пришлите его."));
+}
+async function loadRates(){
+  try {
+    const j = await getJSON("https://open.er-api.com/v6/latest/USD");
+    if (j.rates?.RUB && j.rates?.EUR) { rates = {USD:1, RUB:j.rates.RUB, EUR:j.rates.EUR}; paint(); }
+  } catch { /* повторим позже; без курса показываем доллары */ }
+}
+const currency = () => rates[data.currency] ? data.currency : "USD";
+function money(usd, cur = currency()){
+  const v = usd * rates[cur];
+  const digits = v >= 1000 ? 2 : v >= 10 ? 3 : v >= 1 ? 4 : 6;
+  return v.toLocaleString("ru-RU", {minimumFractionDigits:2, maximumFractionDigits:digits}) + " " + SYM[cur];
+}
+
+/* ---------- ИИ-советник (алгоритм анализа) ---------- */
+function ema(a, n){ const k = 2/(n+1); return a.reduce((prev, x, i) => i ? x*k + prev*(1-k) : x, 0); }
+function rsi(a, n = 14){
+  let g = 0, l = 0;
+  for (let i = a.length - n; i < a.length; i++) { const d = a[i] - a[i-1]; d > 0 ? g += d : l -= d; }
+  return g + l === 0 ? 50 : 100 * g / (g + l);
+}
+function analyzeUSDT(price){
+  const dev = (price - 1) * 100;
+  const base = {price, score:null, frames:[]};
+  if (dev < -0.3) return {...base, signal:"wait", text:`USDT на ${(-dev).toFixed(2)}% дешевле доллара. Это тревожный знак для стейблкоина: не спешите покупать, сначала проверьте новости.`, when:"Дождитесь, пока цена вернётся к 1 доллару."};
+  if (dev > 0.3) return {...base, signal:"sell", text:`USDT дороже доллара на ${dev.toFixed(2)}%. Если собирались обменять его на доллары, сейчас курс выгоднее обычного.`, when:"Покупать с наценкой невыгодно, лучше дождаться цены около 1 доллара."};
+  return {...base, signal:"wait", text:"USDT держится около доллара, всё спокойно. Это «тихая гавань», а не способ заработать на росте.", when:"Покупают, когда хотят переждать колебания рынка."};
+}
+// frames: цены закрытия по периодам 15 минут, 1 час, 1 день
+function analyze(price, closes){
+  const frames = [["15m","15 минут",6],["1h","1 час",12],["1d","1 день",17]].map(([p, name, weight]) => {
+    const a = closes[p], slow = ema(a, 21), trend = (ema(a, 9) - slow) / slow * 100;
+    const dir = trend > 0.15 ? 1 : trend < -0.15 ? -1 : 0;
+    return {name, weight, dir, rsi:rsi(a)};
+  });
+  const hourRsi = frames[1].rsi;
+  const raw = 50 + frames.reduce((n, f) => n + f.dir * f.weight, 0) + Math.max(-20, Math.min(20, (50 - hourRsi) * 0.6));
+  const score = Math.round(Math.max(0, Math.min(100, raw)));
+  const signal = score >= 65 ? "buy" : score <= 35 ? "sell" : "wait";
+  const month = closes["1d"].slice(-30);
+  const low = Math.min(...month, price), high = Math.max(...month, price);
+  const day = frames[2].dir;
+  const trendText = day > 0 ? "Дневной тренд растущий." : day < 0 ? "Дневной тренд падающий, это главный риск." : "На дневном графике явного направления нет.";
+  const heat = hourRsi > 70 ? "За последние часы монета перегрета." : hourRsi < 30 ? "За последние часы монету сильно распродали." : "Перегрева и сильной распродажи на часовом графике нет.";
+  const text = {buy:"Картина скорее в пользу покупки.", sell:"Картина слабая: новую покупку лучше отложить, а если монета уже есть, подумать о продаже части.", wait:"Явного перевеса нет, опытный трейдер здесь подождал бы."}[signal] + " " + trendText + " " + heat;
+  const when = signal === "buy"
+    ? "Можно рассмотреть покупку сейчас, но частями: например, в три захода, а не всей суммой."
+    : "Не торопитесь. Присмотритесь снова, когда оценка поднимется до 65 баллов: например, когда часовой график развернётся вверх или цена успокоится после снижения.";
+  const usd = n => money(n, "USD");
+  const plan = {
+    buy:`Что делать: если решите брать, разделите сумму на 3 части и купите сейчас только первую. Ориентир риска: ${usd(low)} (минимум за 30 дней). Если цена уйдёт ниже, идея не сработала, не докупайте.`,
+    sell:`Что делать: с новой покупкой подождите. Если монета уже есть, подумайте о продаже части, а не всего сразу. Следите за уровнем ${usd(low)} (минимум за 30 дней).`,
+    wait:`Что делать: ничего не спешить. Ждите оценку от 65 (покупка) или до 35 (продажа). Границы за 30 дней: ${usd(low)} и ${usd(high)}.`
+  }[signal];
+  const advice = signal === "sell" && hourRsi < 30 ? `Что делать: не продавайте в панике. Монету уже сильно распродали, возможен отскок; если решили сокращать, делайте это частями. Уровень для наблюдения: ${usd(low)} (минимум за 30 дней).`
+    : signal === "buy" && hourRsi > 70 ? `Что делать: не гонитесь за ценой, монета перегрета. Лучше дождаться отката и покупать частями. Ориентир риска: ${usd(low)} (минимум за 30 дней).` : plan;
+  const agree = frames.filter(f => f.dir === (signal === "buy" ? 1 : -1)).length;
+  const strength = signal === "wait" ? "" : ` Тренд подтверждают ${agree} из 3 графиков${agree < 2 ? ", сигнал слабый" : ""}.`;
+  return {signal, price, score, frames, low, high, text, when, plan:advice, strength};
+}
+const LABEL = {buy:"🟢 Покупать", sell:"🔴 Продавать", wait:"🟡 Ждать", risk:"⚠️ Сильное падение", rise:"📈 Цена выросла", fall:"📉 Цена снизилась"};
+// на сколько должна измениться цена, чтобы прислать сообщение: в долларах, для остальных монет 2%
+const STEP = {GRAM:0.1, BTC:100, ETH:100};
+// падение за сутки, которое считаем значительным (в процентах)
+const dipLimit = coin => coin === "BTC" || coin === "ETH" ? 4 : 7;
+const isDip = (coin, a) => coin !== "USDT" && a.change <= -dipLimit(coin);
+const dipText = (coin, a) => `Цена ${coin} упала на ${Math.abs(a.change).toFixed(1)}% за сутки, сейчас ${money(a.price, "USD")}. Можно купить на свой страх и риск: цена может отскочить и вырасти, но может упасть и ещё сильнее. Если решитесь, берите небольшую часть и только на деньги, которые не страшно потерять.`;
+function push(coin, signal, text, price){
+  const item = {coin, signal, text, price, time:Date.now()};
+  data.history.unshift(item);
+  data.history = data.history.slice(0, 300);
+  save();
+  const t = hintBox(item);
+  t.onclick = () => t.remove();
+  $("toasts").append(t);
+  while ($("toasts").children.length > 3) $("toasts").firstChild.remove();
+  setTimeout(() => t.remove(), 20000);
+  if (view === "history") open("history");
+}
+function watchPrice(coin){
+  const a = latest[coin];
+  if (!a || !data.hints[coin] || coin === "USDT") return;
+  if (isDip(coin, a) && Date.now() - (data.dip[coin] || 0) > 86400000) {
+    data.dip[coin] = Date.now();
+    push(coin, "risk", dipText(coin, a), a.price);
+  }
+  const base = data.base[coin];
+  if (!base) { data.base[coin] = {price:a.price, time:Date.now()}; return save(); }
+  const diff = a.price - base.price, step = STEP[coin] ?? base.price * 0.02;
+  if (Math.abs(diff) < step - 1e-9 || Date.now() - (base.sent || 0) < 300000) return;
+  data.base[coin] = {price:a.price, time:Date.now(), sent:Date.now()};
+  push(coin, diff > 0 ? "rise" : "fall", `Цена ${coin} ${diff > 0 ? "выросла" : "снизилась"}. Сейчас: ${money(a.price, "USD")}. Было: ${money(base.price, "USD")} (${new Date(base.time).toLocaleString("ru-RU")}). Изменение: ${diff > 0 ? "+" : "−"}${money(Math.abs(diff), "USD")}.`, a.price);
+}
+let evaluating = false;
+async function evaluateAll(){
+  if (!user || evaluating) return;
+  evaluating = true;
+  await Promise.all(Object.keys(COINS).map(async coin => {
+    try {
+      let a;
+      if (coin === "USDT") a = analyzeUSDT((await getCandles(coin, "15m")).at(-1).c);
+      else {
+        const closes = {};
+        let price;
+        for (const p of ["15m","1h","1d"]) {
+          const rows = await getCandles(coin, p);
+          if (rows.length < 31) throw new Error("мало данных");
+          if (p === "15m") price = rows.at(-1).c;
+          closes[p] = rows.slice(0,-1).map(r => r.c); // только закрытые свечи, чтобы оценка не мигала
+        }
+        a = analyze(price, closes);
+        a.spark = closes["1h"].slice(-48).concat(price);
+        a.change = (price / closes["1h"].at(-24) - 1) * 100;
+      }
+      latest[coin] = a;
+      maybeSend(coin);
+      watchPrice(coin);
+    } catch { delete latest[coin]; }
+  }));
+  evaluating = false;
+  paintAdvice();
+  paintCoins();
+}
+function maybeSend(coin, force){
+  const a = latest[coin];
+  if (!a || !data.hints[coin]) return;
+  const prev = data.last[coin];
+  // новое сообщение только при смене сигнала и не чаще раза в 15 минут
+  if (!force && prev && (prev.signal === a.signal || Date.now() - prev.time < 900000)) return;
+  const full = a.score === null ? `${a.text} ${a.when}` : `Оценка ${a.score} из 100. ${a.text}${a.strength} ${a.plan}`;
+  const item = {coin, signal:a.signal, text:full, price:a.price, time:Date.now()};
+  data.last[coin] = {signal:a.signal, time:item.time};
+  push(coin, item.signal, item.text, item.price);
+}
+function hintBox(i){
+  const box = el("div", "hint " + i.signal);
+  box.append(el("b", "", `${i.coin}: ${LABEL[i.signal]}`), el("div", "", i.text),
+    el("div", "muted", `${new Date(i.time).toLocaleString("ru-RU")} · цена тогда: ${money(i.price, "USD")}`));
+  return box;
+}
+
+/* ---------- Страницы ---------- */
+function open(v){
+  $("page").classList.toggle("still", v === view);
+  view = v; candles = []; hover = null; chartError = "";
+  const nav = $("nav"); nav.textContent = "";
+  [["menu","Меню","⌂"], ["buy","Купить","🛒"], ["orders","История заявок","📋"], ["history","История предложений","↺"], ...Object.keys(COINS).map(c => [c,c,c[0]])].forEach(([id, label, icon]) => {
+    const b = el("button", (id === "buy" ? "buy " : "") + (id === v ? "on" : "")); b.append(badge(id, icon), el("span", "", label)); b.onclick = () => open(id); nav.append(b);
+  });
+  const page = $("page"); page.textContent = "";
+  if (v === "menu") menuPage(page); else if (v === "history") historyPage(page); else if (v === "buy") buyPage(page); else if (v === "orders") ordersPage(page); else coinPage(page, v);
+}
+function menuPage(page){
+  page.innerHTML = `
+  <div class="banner"><span class="pill"><i></i> Рынок работает круглосуточно</span>
+    <h1>Защищённый оценщик криптовалют</h1>
+    <p>Мы оцениваем криптовалюты и подсказываем, что сейчас выглядит интереснее и когда стоит подумать о покупке или продаже.</p></div>
+  <div class="card" id="best"></div>
+  <div class="grid" id="coins"></div>
+  <div class="card" id="allBox"><button class="primary" id="allHints"></button>
+    <div class="muted">Одна кнопка вместо 14: подсказки включатся сразу по всем монетам. Выключить можно тем же способом или по каждой монете отдельно.</div></div>
+  <div class="card"><h2>Что умеет сайт</h2>
+    <p>Следит за 14 монетами: GRAM, USDT, BTC, ETH, SOL, BNB, XRP, DOGE, TRX, ADA, LTC, LINK, AVAX и DOT. Показывает живой график с ценой в долларах, рублях или евро. Если включить подсказки, ИИ-советник напишет, когда сигнал по монете изменится: «покупать», «продавать» или «ждать». Советник — это компьютерный алгоритм: он считает тренд и перегретость рынка по графикам, но не читает новости.</p></div>
+  <div class="card"><h2>Как пользоваться</h2>
+    <p>1. Выберите монету в меню слева.<br>2. Справа вверху выберите валюту.<br>3. Под графиком нажмите «Включить подсказки» (или одной кнопкой в меню включите их сразу на все монеты).<br>4. Все присланные советы сохраняются в разделе «История предложений».</p>
+    <p class="muted">Первая подсказка приходит сразу после включения, следующие при смене сигнала, не чаще раза в 15 минут по монете. Ещё сайт сообщает об изменении цены (GRAM на 0,1 $, BTC и ETH на 100 $, остальные на 2%, не чаще раза в 5 минут) и о сильном падении за сутки (BTC и ETH от 4%, остальные от 7%). Сайт должен быть открыт во вкладке браузера.</p></div>
+  <div class="card"><h2>Золотые правила</h2>
+    <p>Вкладывайте только те деньги, которые не страшно потерять. Не покупайте на всю сумму сразу. Не поддавайтесь панике и жадности. Никому не сообщайте пароли и секретные фразы кошельков.</p></div>`;
+  $("allHints").onclick = toggleAll;
+  paintAll();
+  paintCoins();
+}
+function paintAll(){
+  const b = $("allHints");
+  if (!b) return;
+  b.textContent = Object.keys(COINS).every(c => data.hints[c]) ? "🔔 Подсказки включены на все монеты (выключить)" : "Включить подсказки на все монеты";
+}
+function toggleAll(){
+  const coins = Object.keys(COINS), turnOn = !coins.every(c => data.hints[c]);
+  const fresh = coins.filter(c => !data.hints[c]);
+  coins.forEach(c => { data.hints[c] = turnOn; if (turnOn) { delete data.base[c]; delete data.dip[c]; } });
+  save(); paintAll();
+  if (turnOn) fresh.forEach(c => { maybeSend(c, true); watchPrice(c); });
+}
+function spark(values){
+  const ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg"), line = document.createElementNS(ns, "polyline");
+  const min = Math.min(...values), range = Math.max(...values) - min || 1;
+  line.setAttribute("points", values.map((v, i) => `${i / (values.length - 1) * 100},${28 - (v - min) / range * 26}`).join(" "));
+  line.setAttribute("pathLength", "1");
+  svg.setAttribute("viewBox", "0 0 100 30"); svg.setAttribute("preserveAspectRatio", "none");
+  svg.setAttribute("class", "spark " + (values.at(-1) >= values[0] ? "up" : "down"));
+  svg.append(line); return svg;
+}
+let tickerSig = "";
+function paintTicker(){
+  const sig = JSON.stringify([latest, currency()]);
+  if (sig === tickerSig) return;
+  tickerSig = sig;
+  const track = $("track"); track.textContent = "";
+  const items = Object.keys(COINS).filter(c => latest[c]);
+  $("ticker").hidden = !items.length;
+  track.style.animationDuration = items.length * 5 + "s";
+  for (let k = 0; k < (items.length > 7 ? 2 : 8); k++) items.forEach(c => {
+    const a = latest[c], item = el("span", "", `${c}  ${money(a.price)} `);
+    if (a.change !== undefined) item.append(el("em", a.change >= 0 ? "up" : "down", `${a.change >= 0 ? "▲" : "▼"} ${Math.abs(a.change).toFixed(2)}%`));
+    track.append(item);
+  });
+}
+function paintCoins(){
+  const box = $("coins");
+  paintTicker();
+  if (view !== "menu" || !box) return;
+  const sig = JSON.stringify([latest, currency()]);
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  const top = Object.entries(latest).filter(([, a]) => a.score !== null).sort((x, y) => y[1].score - x[1].score)[0];
+  const best = $("best"); best.textContent = "";
+  best.append(el("h2", "", "⭐ Оценка рынка сейчас"));
+  best.append(el("div", "", !top ? "Загружаю графики и считаю оценки…" : top[1].signal === "buy"
+    ? `Самая интересная для покупки: ${top[0]} (${top[1].score} из 100).`
+    : `Явных кандидатов на покупку нет. Лучшая оценка у ${top[0]}: ${top[1].score} из 100.`));
+  box.textContent = "";
+  for (const [c, info] of Object.entries(COINS)) {
+    const a = latest[c], card = el("button", "card coin");
+    card.append(badge(c, c[0]), el("span", "muted", `${c} · ${info.name}`),
+      el("b", "", a ? money(a.price) : "—"), el("span", a ? ({buy:"up", sell:"down", wait:"wait"})[a.signal] : "muted", a ? LABEL[a.signal] + (a.score === null ? "" : ` · ${a.score}/100`) : "Нет данных"));
+    card.onclick = () => open(c);
+    card.onpointermove = e => { const r = card.getBoundingClientRect(); card.style.setProperty("--x", e.clientX - r.left + "px"); card.style.setProperty("--y", e.clientY - r.top + "px"); };
+    if (a?.spark) card.append(spark(a.spark));
+    box.append(card);
+  }
+}
+function coinPage(page, coin){
+  page.innerHTML = `
+  <div class="row"><h1 id="title">${coin} · ${COINS[coin].name}</h1>
+    <select id="cur" aria-label="Валюта"><option value="USD">Доллары $</option><option value="RUB">Рубли ₽</option><option value="EUR">Евро €</option></select></div>
+  <p>${COINS[coin].about}</p>
+  <div class="card">
+    <div class="row"><div><div class="price" id="price">…</div><div id="change" class="muted"></div></div><div class="muted" id="status">Загрузка…</div></div>
+    <div class="periods" id="periods"></div>
+    <div class="chartbox" id="chartbox"><canvas id="chart"></canvas><b id="dot" hidden></b></div>
+    <p><button id="diag">🔧 Проверить связь</button></p><div id="diagOut" class="muted"></div>
+    <p><button class="primary" id="toggle"></button></p>
+  </div>
+  <div class="card"><h2>🤖 Совет советника</h2><div id="advice"></div></div>`;
+  const box = el("div", "card"); box.id = "rating"; page.querySelector(".card").before(box);
+  $("title").prepend(badge(coin, coin[0]));
+  $("cur").value = data.currency;
+  $("cur").onchange = e => { data.currency = e.target.value; save(); if (!rates[data.currency]) loadRates(); paint(); };
+  for (const [p, [label]] of Object.entries(PERIODS)) {
+    const b = el("button", p === period ? "on" : "", label);
+    b.onclick = () => { period = p; open(coin); };
+    $("periods").append(b);
+  }
+  $("toggle").onclick = () => { data.hints[coin] = !data.hints[coin]; save(); paintAdvice(); if (data.hints[coin]) { delete data.base[coin]; delete data.dip[coin]; maybeSend(coin, true); watchPrice(coin); } };
+  $("diag").onclick = () => diagnose($("diagOut"));
+  const cv = $("chart");
+  cv.onpointermove = e => { hover = e.offsetX; paint(); };
+  cv.onpointerleave = () => { hover = null; paint(); };
+  paintAdvice();
+  refreshChart();
+}
+function parseContact(raw){
+  const s = raw.trim();
+  const tg = s.replace(/^(https?:\/\/)?t\.me\//i, "").replace(/^@/, "");
+  if (/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(tg)) return {type:"Telegram", value:"@" + tg};
+  const digits = s.replace(/\D/g, "");
+  if (/^\+?[\d\s\-()]+$/.test(s) && digits.length >= 10 && digits.length <= 15) return {type:"Телефон", value:(s.startsWith("+") ? "+" : "") + digits};
+  return null;
+}
+function buyPage(page){
+  page.append(el("h1", "", "🛒 Купить монету"));
+  page.append(el("p", "muted", "Оставьте заявку, и мы свяжемся с вами."));
+  const card = el("div", "card order");
+  const l1 = el("label", "", "1. Выберите монету"); l1.htmlFor = "buyCoin";
+  const sel = el("select"); sel.id = "buyCoin";
+  sel.append(new Option("— выберите монету —", ""));
+  Object.entries(COINS).forEach(([c, info]) => sel.append(new Option(c + " · " + info.name, c)));
+  const l2 = el("label", "", "2. Как с вами связаться"); l2.htmlFor = "buyContact";
+  const inp = el("input"); inp.id = "buyContact"; inp.placeholder = "@username в Telegram или номер телефона"; inp.autocomplete = "off";
+  const hint = el("div", "muted", "Например: @ivan_petrov или +7 900 123-45-67");
+  const btn = el("button", "primary", "Отправить заявку"); btn.type = "button";
+  const err = el("div", "error");
+  card.append(l1, sel, l2, inp, hint, btn, err);
+  page.append(card);
+  let busy = false;
+  const send = async () => {
+    if (busy) return;
+    err.textContent = "";
+    if (!sel.value) return err.textContent = "Выберите монету.";
+    const contact = parseContact(inp.value);
+    if (!contact) return err.textContent = "Введите @username из Telegram (от 5 символов) или номер телефона.";
+    const n = (data.orders[0]?.n || data.orders.length) + 1, time = Date.now();
+    busy = true; btn.disabled = true; btn.textContent = "Отправляю…";
+    if (ORDER_URL) {
+      try {
+        const r = await fetch(ORDER_URL, {method:"POST", headers:{"Content-Type":"application/json"}, signal:AbortSignal.timeout(10000),
+          body:JSON.stringify({n, coin:sel.value, contact:contact.value, login:user.login, time})});
+        if (!r.ok) throw new Error(r.status);
+      } catch {
+        busy = false; btn.disabled = false; btn.textContent = "Отправить заявку";
+        return err.textContent = "Не удалось отправить заявку. Проверьте интернет и попробуйте ещё раз.";
+      }
+    }
+    data.orders.unshift({n, coin:sel.value, contact:contact.value, contactType:contact.type, time});
+    save();
+    card.textContent = "";
+    const ok = el("div", "okmsg");
+    ok.append(el("b", "up", "✅ Заявка отправлена"), el("div", "", "Скоро с вами свяжемся."));
+    const again = el("button", "", "Отправить ещё одну заявку"); again.type = "button";
+    again.onclick = () => open("buy");
+    ok.append(again);
+    card.append(ok);
+  };
+  btn.onclick = send;
+  inp.onkeydown = e => { if (e.key === "Enter") send(); };
+}
+function ordersPage(page){
+  page.append(el("h1", "", "История заявок"));
+  if (!data.orders.length) page.append(el("p", "muted", "Пока пусто. Нажмите «Купить» и отправьте заявку."));
+  data.orders.forEach(o => {
+    const box = el("div", "hint buy");
+    box.append(el("b", "", "Заявка №" + o.n),
+      el("div", "", "Монета: " + o.coin + " · " + COINS[o.coin].name),
+      el("div", "", o.contactType + ": " + o.contact),
+      el("div", "muted", new Date(o.time).toLocaleString("ru-RU")));
+    page.append(box);
+  });
+}
+const MASK = "••••••••";
+function secretRow(label, value){
+  const row = el("div", "prow"), left = el("div"), val = el("div", "pval", MASK);
+  left.append(el("div", "muted", label), val);
+  const eye = el("button", "eye", "👁"); eye.type = "button"; eye.title = "Показать";
+  let shown = false;
+  eye.onclick = () => { shown = !shown; val.textContent = shown ? value : MASK; eye.textContent = shown ? "🙈" : "👁"; eye.title = shown ? "Скрыть" : "Показать"; };
+  row.append(left, eye);
+  return row;
+}
+function openProfile(){
+  if (!user) return;
+  const box = $("profileBody"); box.textContent = "";
+  const head = el("div", "row"), x = el("button", "eye", "✕"); x.type = "button"; x.onclick = closeProfile;
+  head.append(el("h2", "", "Профиль"), x);
+  const login = el("div", "prow"), left = el("div");
+  left.append(el("div", "muted", "Логин"), el("div", "pval", user.login)); login.append(left);
+  const out = el("button", "primary", "Выйти из аккаунта"); out.type = "button";
+  out.onclick = () => { store.set("co_session", null); location.reload(); };
+  box.append(head, login, secretRow("Почта", user.email),
+    secretRow("Пароль", user.pw ?? "не сохранён: выйдите и войдите снова, тогда он появится"), out);
+  $("profile").hidden = false;
+}
+const closeProfile = () => $("profile").hidden = true;
+$("whoName").onclick = openProfile;
+$("profile").onclick = e => { if (e.target === $("profile")) closeProfile(); };
+addEventListener("keydown", e => { if (e.key === "Escape") closeProfile(); });
+function historyPage(page){
+  page.append(el("h1", "", "История предложений"));
+  if (!data.history.length) page.append(el("p", "muted", "Пока пусто. Откройте монету и включите подсказки."));
+  data.history.forEach(i => page.append(hintBox(i)));
+}
+function paintRating(){
+  const box = $("rating");
+  if (!user || !COINS[view] || !box) return;
+  const sig = JSON.stringify([view, latest[view], currency()]);
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  box.textContent = "";
+  box.append(el("h2", "", "Оценка монеты"));
+  const a = latest[view];
+  if (!a) return box.append(el("div", "muted", "Нет свежих данных для оценки. Если это не проходит, проверьте интернет или VPN."));
+  const cls = {buy:"up", sell:"down", wait:"wait"}[a.signal];
+  const head = el("div", "row");
+  const ring = el("div", "ring " + cls);
+  ring.style.setProperty("--v", a.score === null ? 100 : a.score);
+  ring.append(el("span", "", a.score === null ? "≈1$" : String(a.score)));
+  head.append(ring, el("b", "verdict " + cls, LABEL[a.signal]));
+  box.append(head);
+  if (a.score !== null) {
+    const bar = el("div", "bar"), fill = el("i"); fill.style.width = a.score + "%"; bar.append(fill); box.append(bar);
+    box.append(el("div", "muted", "0–35 продавать · 36–64 ждать · 65–100 покупать"));
+  }
+  box.append(el("p", "", a.text), el("p", "", "⏱ Когда покупать: " + a.when));
+  if (isDip(view, a)) box.append(el("div", "hint risk", "⚠️ " + dipText(view, a)));
+  if (a.score === null) return;
+  const grid = el("div", "grid");
+  a.frames.forEach(f => {
+    const c = el("div", "hint " + (f.dir > 0 ? "buy" : f.dir < 0 ? "sell" : "wait"));
+    c.append(el("div", "muted", f.name), el("b", "", f.dir > 0 ? "▲ Растёт" : f.dir < 0 ? "▼ Падает" : "► Боком"), el("div", "muted", "RSI " + f.rsi.toFixed(0)));
+    grid.append(c);
+  });
+  box.append(grid, el("div", "muted", `За 30 дней по ценам закрытия: минимум ${money(a.low)}, максимум ${money(a.high)}.`));
+}
+function paintAdvice(){
+  paintRating();
+  if (!user || !COINS[view]) return;
+  const on = !!data.hints[view], a = latest[view];
+  $("toggle").textContent = on ? "🔔 Подсказки включены (выключить)" : "Включить подсказки";
+  const box = $("advice"); box.textContent = "";
+  if (!on) return box.append(el("div", "muted", "Включите подсказки под графиком, чтобы получать советы."));
+  if (!a) return box.append(el("div", "muted", "Жду свежие данные рынка…"));
+  const h = el("div", "hint " + a.signal);
+  h.append(el("b", "", LABEL[a.signal]), el("div", "", a.score === null ? a.text : a.text + a.strength + " " + a.plan), el("div", "muted", "Это примерная оценка, а не гарантия."));
+  box.append(h);
+}
+
+/* ---------- График ---------- */
+let loading = "";
+async function refreshChart(){
+  if (!user || !COINS[view]) return;
+  const coin = view, p = period, key = coin + p;
+  if (loading === key) return;
+  loading = key;
+  try {
+    const rows = await getCandles(coin, p);
+    if (view !== coin || period !== p) return;
+    if (rows.length < 2) throw new Error("пусто");
+    candles = rows; chartError = "";
+  } catch {
+    if (view !== coin || period !== p) return;
+    chartError = "⚠️ Нет связи с источником цен. Нажмите «Проверить связь» под графиком.";
+  } finally { if (loading === key) loading = ""; }
+  paint();
+}
+function paint(){
+  paintRating();
+  paintCoins();
+  if (!user || !COINS[view] || !$("chart")) return;
+  $("status").textContent = chartError || (candles.length ? "● Обновлено " + new Date().toLocaleTimeString("ru-RU") : "Загрузка…");
+  if (data.currency !== currency()) $("status").textContent = "Курс валюты пока не загружен, показаны доллары";
+  const cv = $("chart"), dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+  cv.width = W*dpr; cv.height = H*dpr;
+  const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  if (!candles.length) return;
+  const v = candles.map(c => c.c), last = v.at(-1), first = v[0];
+  let min = Math.min(...v), max = Math.max(...v);
+  const pad = (max - min) * 0.1 || max * 0.001; min -= pad; max += pad;
+  const right = 96, bottom = 22, w = W - right, h = H - bottom;
+  const x = i => i / (v.length - 1) * w, y = n => (max - n) / (max - min) * h;
+  const color = last >= first ? "#2ec27e" : "#f0616d";
+  g.font = "11px system-ui"; g.strokeStyle = "#26314a"; g.fillStyle = "#8e9ab3";
+  for (let i = 0; i <= 4; i++) {
+    const n = max - (max - min) * i / 4, yy = y(n);
+    g.beginPath(); g.moveTo(0, yy); g.lineTo(w, yy); g.stroke();
+    g.fillText(money(n), w + 6, Math.min(Math.max(yy + 4, 10), h));
+  }
+  const when = t => new Date(t).toLocaleString("ru-RU", period === "all" ? {month:"2-digit", year:"numeric"} : period === "1d" ? {day:"2-digit", month:"2-digit"} : {hour:"2-digit", minute:"2-digit"});
+  g.fillText(when(candles[0].t), 0, H - 6);
+  g.fillText(when(candles.at(-1).t), w - g.measureText(when(candles.at(-1).t)).width, H - 6);
+  g.beginPath(); v.forEach((n, i) => i ? g.lineTo(x(i), y(n)) : g.moveTo(x(i), y(n)));
+  g.strokeStyle = color; g.lineWidth = 2.5; g.lineJoin = "round"; g.shadowColor = color; g.shadowBlur = 10; g.stroke(); g.shadowBlur = 0;
+  const fill = g.createLinearGradient(0, 0, 0, h); fill.addColorStop(0, color + "55"); fill.addColorStop(1, color + "00");
+  g.lineTo(w, h); g.lineTo(0, h); g.closePath(); g.fillStyle = fill; g.fill();
+  const dot = $("dot"); dot.hidden = false; dot.style.left = w + "px"; dot.style.top = y(last) + "px"; dot.style.background = color;
+  if (!$("chartbox").dataset.drawn) { $("chartbox").dataset.drawn = 1; $("chartbox").classList.add("draw"); }
+  let shown = last;
+  if (hover !== null && hover >= 0 && hover <= w) {
+    const i = Math.round(hover / w * (v.length - 1)); shown = v[i];
+    g.strokeStyle = "#8e9ab3"; g.lineWidth = 1; g.beginPath(); g.moveTo(x(i), 0); g.lineTo(x(i), h); g.stroke();
+    g.fillStyle = "#e8edf7"; g.fillText(`${when(candles[i].t)}  ${money(v[i])}`, Math.min(x(i) + 6, w - 130), 12);
+  }
+  const diff = (last - first) / first * 100;
+  const priceEl = $("price"), old = +priceEl.dataset.v;
+  if (old && old !== last) { priceEl.classList.remove("flash-up", "flash-down"); void priceEl.offsetWidth; priceEl.classList.add(last > old ? "flash-up" : "flash-down"); }
+  priceEl.dataset.v = last;
+  priceEl.textContent = money(last);
+  $("change").className = diff >= 0 ? "up" : "down";
+  $("change").textContent = `${diff >= 0 ? "▲ +" : "▼ "}${diff.toFixed(2)}% ${period === "all" ? "за всё время с " + new Date(candles[0].t).toLocaleDateString("ru-RU") : "за период на графике"}`;
+}
+
+/* ---------- Запуск ---------- */
+setMode("reg");
+const saved = store.get("co_users", []).find(u => u.id === store.get("co_session", null));
+if (saved) enter(saved); else $("auth").hidden = false;
+loadRates();
+setInterval(refreshChart, 5000);
+setInterval(evaluateAll, 30000);
+setInterval(loadRates, 3600000);
+addEventListener("resize", paint);
+</script>
+</body>
+</html>
